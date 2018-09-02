@@ -12,144 +12,6 @@
 
 \pgfplotsset{compat=1.16}
 
-%\show\arabic
-
-%\pdfmapline{+dummy-space <dummy-space.pfb}
-%\pdfinterwordspaceon
-%
-%
-%%\pagestyle{fancy}
-%%\fancyhf{}
-%%
-%%\cfoot{\tagmcbegin{tag=Artifact, raw=/Type /Pagination /Subtype /Footer}\thepage\tagmcend}
-%
-%\renewcommand*{\thepage}{\tagmcbegin{artifact=pagination, raw=/Subtype /Footer}\arabic{page}\tagmcend}
-%
-%\tagpdfsetup{activate-all=true, compresslevel=0, inputencoding=utf8}
-%\pdfcatalog{/Lang (en-US) /ViewerPreferences << /DisplayDocTitle true >>}
-%\pdfinfo{/Title (Title goes here)}
-%\title{Title goes here}
-%
-%
-%\input{glyphtounicode}
-%\pdfgentounicode=1
-%
-%%\BeforeBeginEnvironment{tikzpicture}{\tagmcbegin{tag=Figure}}
-%%\AfterEndEnvironment{tikzpicture}{\tagmcend}
-%
-%\ExplSyntaxOn
-%\NewDocumentEnvironment{accfigure}{mo}{%
-%\IfValueTF{#2}{
-%    \begin{figure}[#2]
-%}{
-%    \begin{figure}
-%}
-%\tagstructbegin{tag=Figure, alttext={#1}}%
-%\tagmcbegin{tag=Figure, actualtext={}}%
-%\tagmcbegin{artifact}
-%\cs_set_eq:NN \oldcaption \caption
-%\cs_set:Nn \__caption:n {
-%    \tagmcend
-%    \tagmcend
-%%    \tagstructend
-%    \tagstructbegin{tag=Caption}
-%    \tagmcbegin{tag=Caption}
-%    \oldcaption{##1}
-%    \tagmcend
-%    \tagstructend
-%    \let\tagmcend\relax
-%%    \let\tagstructend\relax
-%}
-%\let\caption\__caption:n
-%%\let\oldcaption\caption
-%%\renewcommand\caption[1]{
-%%    \oldcaption{abc ##1 def}
-%%}
-%}{%
-%\tagmcend
-%\tagmcend%
-%\tagstructend%
-%\end{figure}%
-%}
-%\ExplSyntaxOff
-%
-%\AtBeginDocument{\tagstructbegin{tag=Document}}
-%\AtEndDocument{\tagstructend}
-%
-%\makeatletter
-%\renewcommand\tableofcontents{%
-%  \tagmcbegin{tag=H}%
-%  \textbf{\Large\contentsname}\par%
-%  \tagmcend%
-%  \tagstructbegin{tag=TOC}%
-%  \@mkboth{FIRSTS\MakeUppercase\contentsname FIRSTE}{SECONDS\MakeUppercase\contentsname SECONDE}%
-%  \@starttoc{toc}%
-%  \tagstructend%
-%}
-%
-%%\show\@sect
-%%\show\section
-%
-%
-%\let\oldaddcontentsline\addcontentsline
-%\renewcommand\addcontentsline[3]{%
-%    \addtocontents {#1}{%
-%        \protect\tagstructbegin{tag=TOCI}%
-%        \protect\contentsline {#2}{#3}{\thepage }%
-%        \protect\tagmcend%
-%        \protect\tagstructend
-%        \protect\tagstructend}
-%}
-%
-%\def\@sect #1#2#3#4#5#6[#7]#8 {
-%    \ifnum #2>\c@secnumdepth
-%        \let \@svsec \@empty
-%    \else
-%        \refstepcounter {#1}\protected@edef \@svsec {\@seccntformat {#1}\relax }
-%    \fi
-%    \@tempskipa #5\relax
-%    \ifdim \@tempskipa >\z@
-%        \begingroup
-%            #6{\@hangfrom {\hskip #3\relax \@svsec }\interlinepenalty \@M #8\@@par }%
-%        \endgroup
-%        \csname #1mark\endcsname {#7}
-%        \addcontentsline {toc}{#1}{
-%            \ifnum #2>\c@secnumdepth \else
-%                \protect\tagstructbegin{tag=Lbl}
-%                \protect\tagmcbegin{tag=Lbl}
-%                \protect \numberline{\csname the#1\endcsname }
-%                \protect\tagmcend
-%                \protect\tagstructend
-%            \fi
-%            \protect\tagstructbegin{tag=Reference}
-%            \protect\tagmcbegin{tag=Reference}
-%            #7
-%%            \protect\tagmcend
-%        }
-%    \else
-%        \def \@svsechd {
-%            #6{\hskip #3\relax \@svsec #8}
-%            \csname #1mark\endcsname {#7}
-%            \addcontentsline {toc}{#1}{
-%                \ifnum #2>\c@secnumdepth \else
-%                    \protect\tagstructbegin{tag=Lbl}
-%                    \protect\tagmcbegin{tag=Lbl}
-%                    \protect \numberline{\csname the#1\endcsname }
-%                    \protect\tagmcend
-%                    \protect\tagstructend
-%                \fi
-%                \protect\tagstructbegin{tag=Reference}
-%                \protect\tagmcbegin{tag=Reference}
-%                #7
-%%                \protect\tagmcend
-%            }
-%        }
-%    \fi
-%    \@xsect {#5}
-%}
-%
-%\makeatother
-
 
 \begin{document}
 
@@ -188,7 +50,7 @@
     \addlegendentry{Case 2}
     \end{axis}
     \end{tikzpicture}
-    
+
     \caption{Caption goes here}
 %\tagmcend
 %\end{figure}
@@ -201,6 +63,38 @@
 tag! jiffy infinity affine
 \tagmcend
 %\tagstructend
+
+\begin{accfigure}{This figure does not hav a caption}[h]
+%\tagstructbegin{tag=Figure, alttext=ALT TEXT GOES HERE}
+%\tagmcbegin{tag=Figure}
+\begin{tikzpicture}
+    \begin{axis}[
+        xlabel=$x$,
+        ylabel=$y$]
+    \addplot[smooth,mark=*,blue] plot coordinates {
+        (0,2)
+        (2,3)
+        (3,1)
+    };
+    \addlegendentry{Case 1}
+
+    \addplot[smooth,color=red,mark=o]
+        plot coordinates {
+            (0,0)
+            (1,1)
+            (2,1)
+            (3,2)
+        };
+    \addlegendentry{Case 2}
+    \end{axis}
+    \end{tikzpicture}
+
+%    \caption{Caption goes here}
+%\tagmcend
+%\end{figure}
+\end{accfigure}
+
+\newpage
 
 \section{A Section with Text Only}
 

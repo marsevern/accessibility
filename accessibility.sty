@@ -12,8 +12,25 @@
 %\usepackage{fancyhdr}
 \RequirePackage{xparse}
 \RequirePackage[resetfonts]{cmap}
+\RequirePackage{tagpdf}
 %\usepackage{etoolbox}
 
+
+
+\tagpdfsetup{activate-all=true, compresslevel=0, inputencoding=utf8}
+\pdfcatalog{/Lang~(en-US)~/ViewerPreferences~<<~/DisplayDocTitle~true~>>}
+\pdfinfo{/Title (Title~goes~here)}
+\title{Title~goes~here}
+
+
+\input{glyphtounicode}
+\pdfgentounicode=1
+
+
+
+%\RequirePackage{interface3}
+
+\newcounter{acc@figurenumber}
 
 %\usetikzlibrary{svg.path}
 
@@ -58,13 +75,13 @@
 }
 
 \cs_new:Nn \acc_open_figure_smc:nn {
-    \tagstructbegin{tag=Figure, alttext=#1, #2}
-    \tagmcbegin{tag=Figure, actualtext={}}
+    \tagstructbegin{tag=Figure, alttext=#1, #2, actualtext={~}}
+    \tagmcbegin{tag=Figure}%, actualtext=M}
 }
 
 \cs_new:Nn \acc_open_figure_smc:n {
-    \tagstructbegin{tag=Figure, alttext={#1}}
-    \tagmcbegin{tag=Figure, actualtext={}}
+    \tagstructbegin{tag=Figure, alttext={#1}, actualtext={~}}
+    \tagmcbegin{tag=Figure}%, actualtext=M}
 }
 
 \NewDocumentCommand { \OpenStruct } { mo } {
@@ -110,18 +127,24 @@
     }
 }
 
-\tagpdfsetup{activate-all=true, compresslevel=0, inputencoding=utf8}
-\pdfcatalog{/Lang~(en-US)~/ViewerPreferences~<<~/DisplayDocTitle~true~>>}
-\pdfinfo{/Title (Title~goes~here)}
-\title{Title~goes~here}
+\NewDocumentCommand { \OpenFigureStash } { mom } {
+    \IfNoValueTF {#2} {
+        \acc_open_figure_smc:nn {#1} {stash, label=#3}
+    } {
+        \acc_open_figure_smc:nn {#1} {stash, label=#3,#2}
+    }
+}
 
 
-\input{glyphtounicode}
-\pdfgentounicode=1
 
 
+\cs_generate_variant:Nn \uftag_struct_use:n {o}
 
 \NewDocumentEnvironment{accfigure}{mo}{%
+
+\stepcounter{acc@figurenumber}
+\edef\figlabel{fig-\theacc@figurenumber}
+
 \IfValueTF{#2}{
     \begin{figure}[#2]
 }{
@@ -130,7 +153,22 @@
 
 
 
-\OpenFigureTag{#1}
+%\OpenFigureStash{#1}{figurestash}
+
+\edef\structfiglabel{tag=Figure, stash, label=\figlabel, alttext={#1}, actualtext={~}}
+\ex\def\ex\showstructbegin\ex{\ex\tagstructbegin\ex{\structfiglabel}}
+
+%\show\showstructbegin
+
+%\show\structfiglabel
+
+%\tagstructbegin{tag=Figure, stash, label=\figlabel, alttext={#1}, actualtext={~}}
+%\ex\tagstructbegin\ex{\structfiglabel}
+
+\showstructbegin
+
+\tagmcbegin{tag=Figure}
+
 
 \cs_set_eq:NN \oldcaption \caption
 \cs_set:Nn \__caption:n {
@@ -141,21 +179,26 @@
 \let\caption\__caption:n
 
 }{
-\CloseStructMc
+    \CloseStructMc
+    \uftag_struct_use:o \figlabel
+%\CloseStructMc
 \end{figure}%
 }
 
+
 \AtBeginDocument{\tagstructbegin{tag=Document}}
-\AtEndDocument{\tagstructend}
+\AtEndDocument{\__acc_doc_end_section:\tagstructend}
 
 \renewcommand\tableofcontents{
-  \OpenStructMc{H1}
-  \textbf{\Large\contentsname}\par
-  \CloseStructMc
-  \OpenStruct{TOC}
-  \@mkboth{\MakeUppercase\contentsname}{\MakeUppercase\contentsname}
-  \@starttoc{toc}
-  \CloseStruct
+    \OpenStruct{Sect}
+    \OpenStructMc{H1}
+    \textbf{\Large\contentsname}\par
+    \CloseStructMc
+    \OpenStruct{TOC}
+    \@mkboth{\MakeUppercase\contentsname}{\MakeUppercase\contentsname}
+    \@starttoc{toc}
+    \CloseStruct
+    \CloseStruct
 }
 
 \let\oldaddcontentsline\addcontentsline
@@ -201,7 +244,23 @@
     \fi
 }
 
+\cs_set_eq:NN \__acc_old_section:D \section
+
+\cs_set:Npn \section {\cs_if_exist_use:N \EndSection\BeginSection\__acc_old_section:D}
+
+%\cs_set_eq:NN \EndSection \relax
+\cs_new:Nn \__acc_real_end_section: {\tagstructend}
+\NewDocumentCommand {\BeginSection} {} {
+    \cs_gset_eq:NN \EndSection \__acc_real_end_section:
+    \tagstructbegin{tag=Sect}
+}
+
+\cs_set:Nn \__acc_doc_end_section: {
+    \cs_if_exist_use:N \EndSection
+}
+
 \def\@sect #1#2#3#4#5#6[#7]#8 {
+                \OpenStructMc{H#2}
     \ifnum #2>\c@secnumdepth
         \let \@svsec \@empty
     \else
@@ -212,8 +271,8 @@
         \begingroup
             #6{
                 \@hangfrom {\hskip #3\relax \@svsec }\interlinepenalty \@M
-                \OpenStructMc{H#2}
                 #8
+%                #1-#2-#3-#4-#5-#6-#7-#8
                 \CloseStructMc
                 \@@par
             }%
