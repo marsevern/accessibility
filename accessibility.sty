@@ -1,0 +1,258 @@
+\RequirePackage{expl3}[2018/06/14]
+
+\ExplSyntaxOn
+\ProvidesExplPackage{accessibility}{2018/08/31}{0.1}
+{A package for easily creating accessible pdfs}
+
+%\documentclass{article}
+%\usepackage{expl3}
+\usepackage{tikz}
+%\usepackage{pgfplots}
+%\usepackage{tagpdf}
+%\usepackage{fancyhdr}
+\RequirePackage{xparse}
+\RequirePackage[resetfonts]{cmap}
+%\usepackage{etoolbox}
+
+
+%\usetikzlibrary{svg.path}
+
+
+\pdfmapline{+dummy-space <dummy-space.pfb}
+\pdfinterwordspaceon
+
+\let\ex\expandafter
+
+\cs_new:Nn \__fake_dot: {
+	\begin{tikzpicture}
+		\fill (0,.003em) circle (.0525em);
+	\end{tikzpicture}
+}
+
+\cs_set_eq:NN \__old_thepage: \thepage
+\cs_set:Npn \thepage {
+    \tagmcbegin{
+        artifact=pagination,
+        raw=/Subtype /Footer,
+    }
+    \arabic{page}
+    \tagmcend
+}
+
+\cs_new:Nn \acc_open_struct:n {\tagstructbegin{tag=#1}}
+\cs_new:Nn \acc_open_struct:nn {\tagstructbegin{tag=#1,#2}}
+\cs_new:Nn \acc_open_mc:n {\tagmcbegin{tag=#1}}
+\cs_new:Nn \acc_open_mc:nn {\tagmcbegin{tag=#1,#2}}
+
+\cs_new:Nn \acc_open_smc:n {
+    \tagstructbegin{#1}
+    \tagmcbegin{#1}
+}
+\cs_new:Nn \acc_open_smc:nnn {
+    \tagstructbegin{#1,#2}
+    \tagmcbegin{#1,#3}
+}
+\cs_new:Nn \acc_close_smc: {
+    \tagmcend
+    \tagstructend
+}
+
+\cs_new:Nn \acc_open_figure_smc:nn {
+    \tagstructbegin{tag=Figure, alttext=#1, #2}
+    \tagmcbegin{tag=Figure, actualtext={}}
+}
+
+\cs_new:Nn \acc_open_figure_smc:n {
+    \tagstructbegin{tag=Figure, alttext={#1}}
+    \tagmcbegin{tag=Figure, actualtext={}}
+}
+
+\NewDocumentCommand { \OpenStruct } { mo } {
+    \IfNoValueTF {#2} {
+        \acc_open_struct:n {#1}
+    } {
+        \acc_open_struct:nn {#1} {#2}
+    }
+}
+
+\NewDocumentCommand { \CloseStruct } {} { \tagstructend }
+\NewDocumentCommand { \CloseMc } {} { \tagmcend }
+
+\NewDocumentCommand { \OpenMc } { mo } {
+    \IfNoValueTF {#2} {
+        \acc_open_mc:n {#1}
+    } {
+        \acc_open_mc:nn {#1} {#2}
+    }
+}
+
+\NewDocumentCommand { \OpenStructMc } { moo } {
+    \IfNoValueTF {#2} {
+        \acc_open_struct:n {#1}
+        \acc_open_mc:n {#1}
+    } {
+        \acc_open_struct:nn {#1} {#2}
+        \IfNoValueTF {#3} {
+            \acc_open_mc:n {#1}
+        } {
+            \acc_open_mc:nn {#1} {#3}
+        }
+    }
+}
+
+\NewDocumentCommand { \CloseStructMc } {} { \acc_close_smc: }
+
+\NewDocumentCommand { \OpenFigureTag } { mo } {
+    \IfNoValueTF {#2} {
+        \acc_open_figure_smc:n {#1}
+    } {
+        \acc_open_figure_smc:nn {#1} {#2}
+    }
+}
+
+\tagpdfsetup{activate-all=true, compresslevel=0, inputencoding=utf8}
+\pdfcatalog{/Lang~(en-US)~/ViewerPreferences~<<~/DisplayDocTitle~true~>>}
+\pdfinfo{/Title (Title~goes~here)}
+\title{Title~goes~here}
+
+
+\input{glyphtounicode}
+\pdfgentounicode=1
+
+
+
+\NewDocumentEnvironment{accfigure}{mo}{%
+\IfValueTF{#2}{
+    \begin{figure}[#2]
+}{
+    \begin{figure}
+}
+
+
+
+\OpenFigureTag{#1}
+
+\cs_set_eq:NN \oldcaption \caption
+\cs_set:Nn \__caption:n {
+    \CloseStructMc
+    \OpenStructMc{Caption}
+    \oldcaption{##1}
+}
+\let\caption\__caption:n
+
+}{
+\CloseStructMc
+\end{figure}%
+}
+
+\AtBeginDocument{\tagstructbegin{tag=Document}}
+\AtEndDocument{\tagstructend}
+
+\renewcommand\tableofcontents{
+  \OpenStructMc{H1}
+  \textbf{\Large\contentsname}\par
+  \CloseStructMc
+  \OpenStruct{TOC}
+  \@mkboth{\MakeUppercase\contentsname}{\MakeUppercase\contentsname}
+  \@starttoc{toc}
+  \CloseStruct
+}
+
+\let\oldaddcontentsline\addcontentsline
+\renewcommand\addcontentsline[3]{
+    \addtocontents {#1}{
+        \OpenStruct{TOCI}
+        \protect\contentsline {#2}{#3}{\__old_thepage: }
+        \CloseStructMc
+        \CloseStruct
+    }
+}
+
+\cs_new:Nn \__acc_artifact_args: {
+    Layout /ActualText ()
+}
+
+%#4 = subsection number and name
+%#5 = page number
+\def\@dottedtocline#1#2#3#4#5{
+    \ifnum #1>\c@tocdepth \else
+        \vskip \z@ \@plus .2\p@
+        {
+            \leftskip #2\relax \rightskip \@tocrmarg \parfillskip -\rightskip
+            \parindent #2\relax \@afterindenttrue \interlinepenalty \@M \leavevmode
+            \@tempdima #3\relax \advance \leftskip \@tempdima \null \nobreak
+            \hskip -\leftskip {#4}\nobreak
+%            \tagmcbegin{stash, tag=Private, actualtext=}\nobreak
+%            \tagstructbegin{stash, tag=Artifact, actualtext=}\nobreak
+%            \tagmcbegin{artifact=layout}\nobreak
+%            \__uftag_mc_handle_artifact:N \__acc_artifact_args:\nobreak
+            \leaders \hbox {
+%                $\m@th \mkern \@dotsep mu\hbox {.}\mkern \@dotsep mu$
+                $\m@th \mkern \@dotsep mu\hbox {\__fake_dot:}\mkern \@dotsep mu$
+            } \hfill
+            \nobreak
+%            \tagmcend\nobreak
+%            \tagstructend\nobreak
+%            \tagmcend\nobreak
+%            \tagmcbegin{artifact=pagination}\nobreak
+            \hb@xt@ \@pnumwidth {\hfil \normalfont \normalcolor #5}\par
+%            \tagmcend
+        }
+    \fi
+}
+
+\def\@sect #1#2#3#4#5#6[#7]#8 {
+    \ifnum #2>\c@secnumdepth
+        \let \@svsec \@empty
+    \else
+        \refstepcounter {#1}\protected@edef \@svsec {\@seccntformat {#1}\relax }
+    \fi
+    \@tempskipa #5\relax
+    \ifdim \@tempskipa >\z@
+        \begingroup
+            #6{
+                \@hangfrom {\hskip #3\relax \@svsec }\interlinepenalty \@M
+                \OpenStructMc{H#2}
+                #8
+                \CloseStructMc
+                \@@par
+            }%
+        \endgroup
+        \csname #1mark\endcsname {#7}
+        \addcontentsline {toc}{#1}{
+            \ifnum #2>\c@secnumdepth \else
+                \OpenStructMc{Lbl}
+                \protect \numberline{\csname the#1\endcsname }
+                \CloseStructMc
+            \fi
+            \OpenStructMc{Reference}
+            #7
+%            \CloseStructMc
+        }
+    \else
+        \def \@svsechd {
+            #6{
+                \hskip #3\relax \@svsec
+                \@hangfrom {\hskip #3\relax \@svsec }\interlinepenalty \@M
+                \OpenStructMc{H#2}
+                #8
+                \CloseStructMc
+                \@@par
+            }
+            \csname #1mark\endcsname {#7}
+            \addcontentsline {toc}{#1}{
+                \ifnum #2>\c@secnumdepth \else
+                    \OpenStructMc{Lbl}
+                    \protect \numberline{\csname the#1\endcsname }
+                    \CloseStructMc
+                \fi
+                \OpenStructMc{Reference}
+                #7
+%                \CloseStructMc
+            }
+        }
+    \fi
+    \@xsect {#5}
+}
+
+\endinput
