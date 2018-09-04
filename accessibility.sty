@@ -190,7 +190,8 @@
 \AtEndDocument{\__acc_doc_end_section:\tagstructend}
 
 \renewcommand\tableofcontents{
-    \OpenStruct{Sect}
+%    \OpenStruct{Sect}
+    \__acc_open_section:n { 1 }
     \OpenStructMc{H1}
     \textbf{\Large\contentsname}\par
     \CloseStructMc
@@ -198,7 +199,7 @@
     \@mkboth{\MakeUppercase\contentsname}{\MakeUppercase\contentsname}
     \@starttoc{toc}
     \CloseStruct
-    \CloseStruct
+%    \CloseStruct
 }
 
 \let\oldaddcontentsline\addcontentsline
@@ -244,9 +245,32 @@
     \fi
 }
 
+\cs_new:Nn \__acc_try_close_section:n {
+    \cs_if_exists_use:c { __acc_close_section_level_ #1 : }
+}
+
+\cs_generate_variant:Nn \__acc_try_close_section:n { V }
+
+\int_new:N \l_close_sec_depth_int
+
+\cs_new:Nn \__acc_close_open_sections_recursive:n {
+    \cs_if_exist_use:cTF { __acc_close_section_level_ #1 : } {
+        \cs_undefine:c { __acc_close_section_level_ #1 : }
+        \__acc_close_open_sections_recursive:x { \int_eval:n { 1 + #1 } }
+    } { }
+}
+
+\cs_generate_variant:Nn \__acc_close_open_sections_recursive:n { x }
+
+\cs_new:Nn \__acc_open_section:n {
+    \__acc_close_open_sections_recursive:n {#1}
+    \cs_new:cn { __acc_close_section_level_ #1 : } { \uftag_struct_end: }
+    \uftag_struct_begin:n { tag = Sect }
+}
+
 \cs_set_eq:NN \__acc_old_section:D \section
 
-\cs_set:Npn \section {\cs_if_exist_use:N \EndSection\BeginSection\__acc_old_section:D}
+%\cs_set:Npn \section {\cs_if_exist_use:N \EndSection\BeginSection\__acc_old_section:D}
 
 %\cs_set_eq:NN \EndSection \relax
 \cs_new:Nn \__acc_real_end_section: {\tagstructend}
@@ -256,7 +280,58 @@
 }
 
 \cs_set:Nn \__acc_doc_end_section: {
-    \cs_if_exist_use:N \EndSection
+    \__acc_close_open_sections_recursive:n { 1 }
+%    \cs_if_exist_use:N \EndSection
+}
+
+
+
+\def\@startsection#1#2#3#4#5#6{
+    \__acc_open_section:n {#2}
+    \if@noskipsec
+        \leavevmode
+    \fi
+    \par \@tempskipa #4\relax \@afterindenttrue
+    \ifdim \@tempskipa <\z@
+        \@tempskipa -\@tempskipa \@afterindentfalse
+    \fi
+    \if@nobreak
+        \everypar {}
+    \else
+        \addpenalty \@secpenalty \addvspace \@tempskipa
+    \fi
+    \@ifstar {
+        \uftag_struct_begin:n {tag=H#2}
+        \nobreak
+        \uftag_mc_begin:n {tag=H#2}
+        \nobreak
+        \@ssect {#3}{#4}{#5}{#6}
+    }{
+        \@dblarg {\@sect {#1}{#2}{#3}{#4}{#5}{#6}}
+    }
+}
+
+\def\@ssect#1#2#3#4#5{
+    \@tempskipa #3\relax
+    \ifdim \@tempskipa >\z@
+        \begingroup
+            #4{\@hangfrom {\hskip #1}\interlinepenalty \@M
+            #5
+            \nobreak
+            \uftag_mc_end:
+            \uftag_struct_end:
+            \@@par }
+        \endgroup
+    \else
+        \def \@svsechd {
+            #4{\hskip #1\relax
+            #5
+            \nobreak
+            \uftag_mc_end:
+            \uftag_struct_end:
+        }}
+    \fi
+    \@xsect {#3}
 }
 
 \def\@sect #1#2#3#4#5#6[#7]#8 {

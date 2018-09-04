@@ -64,7 +64,7 @@ tag! jiffy infinity affine
 \tagmcend
 %\tagstructend
 
-\begin{accfigure}{This figure does not hav a caption}[h]
+\begin{accfigure}{This figure does not have a caption}[h]
 %\tagstructbegin{tag=Figure, alttext=ALT TEXT GOES HERE}
 %\tagmcbegin{tag=Figure}
 \begin{tikzpicture}
@@ -96,17 +96,37 @@ tag! jiffy infinity affine
 
 \newpage
 
-\section{A Section with Text Only}
+\section[Short Title]{A Section with Text Only}
 
 \OpenMc{P}
-Here is one paragraph. It has very few sentences.
+Here is one paragraph. It has a bunch of sentences. It unfortunately cannot cross a page barrier. If it does, it needs to be separated into multiple `P' tags.
 \CloseMc{}
 
 \OpenMc{P}
 And an even shorter paragraph here.
 \CloseMc
 
+\section*{A section not in the Table of Contents}
 
+\begin{equation} \textstyle
+  \mathcal{L}_{\mathcal{T}}(\vec{\lambda}) = \sum_{\mathbf{x},\mathbf{s}\in\mathcal{T}} \log P(\mathbf{x}|\mathbf{S}) - \sum_{i=1}^m \frac{\lambda_i^2}{2\sigma^2}
+\end{equation}
+
+%\tagstructend
+
+%\ExplSyntaxOn
+%
+%\__acc_open_section:n {1}
+%
+%\__acc_open_section:n {2}
+%
+%\__acc_open_section:n {2}
+%
+%\__acc_open_section:n {3}
+%
+%\__acc_open_section:n {1}
+%
+%\ExplSyntaxOff
 
 
 \end{document} 
