@@ -15,16 +15,26 @@
 \RequirePackage{tagpdf}
 %\usepackage{etoolbox}
 
+\input{glyphtounicode}
+\pdfgentounicode=1
+\pdfmapline{+dummy-space <dummy-space.pfb}
+\pdfinterwordspaceon
 
 
 \tagpdfsetup{activate-all=true, compresslevel=0, inputencoding=utf8}
 \pdfcatalog{/Lang~(en-US)~/ViewerPreferences~<<~/DisplayDocTitle~true~>>}
-\pdfinfo{/Title (Title~goes~here)}
-\title{Title~goes~here}
+%\pdfinfo{/Title (Title~goes~here)}
+%\title{Title~goes~here}
 
 
-\input{glyphtounicode}
-\pdfgentounicode=1
+\cs_set_eq:NN \__acc_old_title:n \title
+\cs_undefine:N \title
+\cs_new:Nn \acc_title:n {
+    \pdfinfo{/Title (#1)}
+    \__acc_old_title:n {#1}
+}
+\NewDocumentCommand { \title } { m } { \acc_title:n {#1} }
+
 
 
 
@@ -35,10 +45,8 @@
 %\usetikzlibrary{svg.path}
 
 
-\pdfmapline{+dummy-space <dummy-space.pfb}
-\pdfinterwordspaceon
 
-\let\ex\expandafter
+\cs_set_eq:NN \ex \expandafter
 
 \cs_new:Nn \__fake_dot: {
 	\begin{tikzpicture}
@@ -176,7 +184,7 @@
     \OpenStructMc{Caption}
     \oldcaption{##1}
 }
-\let\caption\__caption:n
+\cs_set_eq:NN \caption \__caption:n
 
 }{
     \CloseStructMc
@@ -190,7 +198,6 @@
 \AtEndDocument{\__acc_doc_end_section:\tagstructend}
 
 \renewcommand\tableofcontents{
-%    \OpenStruct{Sect}
     \__acc_open_section:n { 1 }
     \OpenStructMc{H1}
     \textbf{\Large\contentsname}\par
@@ -199,10 +206,9 @@
     \@mkboth{\MakeUppercase\contentsname}{\MakeUppercase\contentsname}
     \@starttoc{toc}
     \CloseStruct
-%    \CloseStruct
 }
 
-\let\oldaddcontentsline\addcontentsline
+\cs_set_eq:NN \oldaddcontentsline \addcontentsline
 \renewcommand\addcontentsline[3]{
     \addtocontents {#1}{
         \OpenStruct{TOCI}
@@ -226,21 +232,11 @@
             \parindent #2\relax \@afterindenttrue \interlinepenalty \@M \leavevmode
             \@tempdima #3\relax \advance \leftskip \@tempdima \null \nobreak
             \hskip -\leftskip {#4}\nobreak
-%            \tagmcbegin{stash, tag=Private, actualtext=}\nobreak
-%            \tagstructbegin{stash, tag=Artifact, actualtext=}\nobreak
-%            \tagmcbegin{artifact=layout}\nobreak
-%            \__uftag_mc_handle_artifact:N \__acc_artifact_args:\nobreak
             \leaders \hbox {
-%                $\m@th \mkern \@dotsep mu\hbox {.}\mkern \@dotsep mu$
                 $\m@th \mkern \@dotsep mu\hbox {\__fake_dot:}\mkern \@dotsep mu$
             } \hfill
             \nobreak
-%            \tagmcend\nobreak
-%            \tagstructend\nobreak
-%            \tagmcend\nobreak
-%            \tagmcbegin{artifact=pagination}\nobreak
             \hb@xt@ \@pnumwidth {\hfil \normalfont \normalcolor #5}\par
-%            \tagmcend
         }
     \fi
 }
@@ -251,7 +247,7 @@
 
 \cs_generate_variant:Nn \__acc_try_close_section:n { V }
 
-\int_new:N \l_close_sec_depth_int
+%\int_new:N \l_close_sec_depth_int
 
 \cs_new:Nn \__acc_close_open_sections_recursive:n {
     \cs_if_exist_use:cTF { __acc_close_section_level_ #1 : } {
@@ -276,7 +272,7 @@
 \cs_new:Nn \__acc_real_end_section: {\tagstructend}
 \NewDocumentCommand {\BeginSection} {} {
     \cs_gset_eq:NN \EndSection \__acc_real_end_section:
-    \tagstructbegin{tag=Sect}
+    \uftag_struct_begin:n { tag = Sect }
 }
 
 \cs_set:Nn \__acc_doc_end_section: {

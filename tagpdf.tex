@@ -1,16 +1,18 @@
 \documentclass{article}
-\usepackage{expl3}
-\usepackage{tikz}
+%\usepackage{expl3}
+%\usepackage{tikz}
 \usepackage{pgfplots}
-\usepackage{tagpdf}
-\usepackage{fancyhdr}
-\usepackage{xparse}
-\usepackage{etoolbox}
+%\usepackage{tagpdf}
+%\usepackage{fancyhdr}
+%\usepackage{xparse}
+%\usepackage{etoolbox}
 \usepackage{accessibility}
-\usepackage{indentfirst}
+%\usepackage{indentfirst}
 
 
 \pgfplotsset{compat=1.16}
+
+\title{This is My Title}
 
 
 \begin{document}
@@ -20,7 +22,6 @@
 \newpage
 
 \section{TikzPicture}
-
 
 
 
@@ -59,9 +60,11 @@
 
 \subsection{Here is a Subsection}
 
-\tagmcbegin{tag=P}
+%\tagmcbegin{tag=P}
+\OpenStructMc{P}
 tag! jiffy infinity affine
-\tagmcend
+\CloseStructMc
+%\tagmcend
 %\tagstructend
 
 \begin{accfigure}{This figure does not have a caption}[h]
@@ -98,19 +101,21 @@ tag! jiffy infinity affine
 
 \section[Short Title]{A Section with Text Only}
 
-\OpenMc{P}
+\OpenStructMc{P}
 Here is one paragraph. It has a bunch of sentences. It unfortunately cannot cross a page barrier. If it does, it needs to be separated into multiple `P' tags.
-\CloseMc{}
+\CloseStructMc{}
 
-\OpenMc{P}
+\OpenStructMc{P}
 And an even shorter paragraph here.
-\CloseMc
+\CloseStructMc
 
 \section*{A section not in the Table of Contents}
 
+\OpenStructMc{Formula}[alttext=An example formula]
 \begin{equation} \textstyle
   \mathcal{L}_{\mathcal{T}}(\vec{\lambda}) = \sum_{\mathbf{x},\mathbf{s}\in\mathcal{T}} \log P(\mathbf{x}|\mathbf{S}) - \sum_{i=1}^m \frac{\lambda_i^2}{2\sigma^2}
 \end{equation}
+\CloseStructMc
 
 %\tagstructend
 
