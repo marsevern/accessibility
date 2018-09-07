@@ -4,49 +4,34 @@
 \ProvidesExplPackage{accessibility}{2018/08/31}{0.1}
 {A package for easily creating accessible pdfs}
 
-%\documentclass{article}
-%\usepackage{expl3}
-\usepackage{tikz}
-%\usepackage{pgfplots}
-%\usepackage{tagpdf}
-%\usepackage{fancyhdr}
+\RequirePackage{tikz}
 \RequirePackage{xparse}
 \RequirePackage[resetfonts]{cmap}
 \RequirePackage{tagpdf}
-%\usepackage{etoolbox}
 
 \input{glyphtounicode}
 \pdfgentounicode=1
-\pdfmapline{+dummy-space <dummy-space.pfb}
+\pdfmapline { +dummy-space < dummy-space.pfb }
 \pdfinterwordspaceon
+\tagpdfsetup { activate-all = true, compresslevel = 0, inputencoding = utf8 }
+\pdfcatalog { /Lang~(en-US)~ /ViewerPreferences~ <</DisplayDocTitle~true>> }
 
-
-\tagpdfsetup{activate-all=true, compresslevel=0, inputencoding=utf8}
-\pdfcatalog{/Lang~(en-US)~/ViewerPreferences~<<~/DisplayDocTitle~true~>>}
-%\pdfinfo{/Title (Title~goes~here)}
-%\title{Title~goes~here}
-
+\newcounter{acc@figurenumber}
 
 \cs_set_eq:NN \__acc_old_title:n \title
 \cs_undefine:N \title
 \cs_new:Nn \acc_title:n {
-    \pdfinfo{/Title (#1)}
-    \__acc_old_title:n {#1}
+	\pdfinfo { /Title (#1) }
+	\__acc_old_title:n {#1}
 }
 \NewDocumentCommand { \title } { m } { \acc_title:n {#1} }
 
 
 
-
 %\RequirePackage{interface3}
 
-\newcounter{acc@figurenumber}
 
-%\usetikzlibrary{svg.path}
-
-
-
-\cs_set_eq:NN \ex \expandafter
+\cs_new_eq:NN \ex \expandafter
 
 \cs_new:Nn \__fake_dot: {
 	\begin{tikzpicture}
@@ -54,335 +39,237 @@
 	\end{tikzpicture}
 }
 
-\cs_set_eq:NN \__old_thepage: \thepage
-\cs_set:Npn \thepage {
-    \tagmcbegin{
-        artifact=pagination,
-        raw=/Subtype /Footer,
-    }
-    \arabic{page}
-    \tagmcend
+\cs_new_eq:NN \__old_thepage: \thepage
+\cs_gset:Npn \thepage {
+	\acc_open_artifact:n {pagination}
+	\__old_thepage:
+	\acc_close_mc:
 }
 
-\cs_new:Nn \acc_open_struct:n {\tagstructbegin{tag=#1}}
-\cs_new:Nn \acc_open_struct:nn {\tagstructbegin{tag=#1,#2}}
-\cs_new:Nn \acc_open_mc:n {\tagmcbegin{tag=#1}}
-\cs_new:Nn \acc_open_mc:nn {\tagmcbegin{tag=#1,#2}}
+\cs_new_protected:Nn \acc_open_struct:n { \uftag_struct_begin:n { tag = #1 } }
+\cs_new_protected:Nn \acc_open_struct:nn { \uftag_struct_begin:n { tag = #1, #2 } }
+\cs_new_protected:Nn \acc_open_mc:n { \uftag_mc_begin:n { tag = #1 } }
+\cs_new_protected:Nn \acc_open_mc:nn { \uftag_mc_begin:n { tag = #1, #2 } }
+\cs_new_protected:Nn \acc_open_artifact:n { \uftag_mc_begin:n { artifact = #1 } }
+\cs_new_protected:Nn \acc_close_struct: { \uftag_struct_end: }
+\cs_new_protected:Nn \acc_close_mc: { \uftag_mc_end: }
 
-\cs_new:Nn \acc_open_smc:n {
-    \tagstructbegin{#1}
-    \tagmcbegin{#1}
+\cs_new_protected:Nn \acc_open_smc:n {
+	\acc_open_struct:n {#1}
+	\acc_open_mc:n {#1}
 }
-\cs_new:Nn \acc_open_smc:nnn {
-    \tagstructbegin{#1,#2}
-    \tagmcbegin{#1,#3}
+\cs_new_protected:Nn \acc_open_smc:nnn {
+	\acc_open_struct:nn {#1} {#2}
+	\acc_open_mc:nn {#1} {#3}
 }
-\cs_new:Nn \acc_close_smc: {
-    \tagmcend
-    \tagstructend
-}
-
-\cs_new:Nn \acc_open_figure_smc:nn {
-    \tagstructbegin{tag=Figure, alttext=#1, #2, actualtext={~}}
-    \tagmcbegin{tag=Figure}%, actualtext=M}
+\cs_new_protected:Nn \acc_close_smc: {
+	\acc_close_mc:
+	\acc_close_struct:
 }
 
-\cs_new:Nn \acc_open_figure_smc:n {
-    \tagstructbegin{tag=Figure, alttext={#1}, actualtext={~}}
-    \tagmcbegin{tag=Figure}%, actualtext=M}
-}
+\cs_new_protected:Nn \acc_open_figure_smc:nn { \acc_open_smc:nnn {Figure} { alttext = {#1}, #2, actualtext = {~} } { } }
 
-\NewDocumentCommand { \OpenStruct } { mo } {
-    \IfNoValueTF {#2} {
-        \acc_open_struct:n {#1}
-    } {
-        \acc_open_struct:nn {#1} {#2}
-    }
-}
+\cs_new_protected:Nn \acc_open_figure_smc:n { \acc_open_figure_smc:nn {#1} { } }
 
-\NewDocumentCommand { \CloseStruct } {} { \tagstructend }
-\NewDocumentCommand { \CloseMc } {} { \tagmcend }
+\NewDocumentCommand { \OpenStruct } { mO{} } { \acc_open_struct:nn {#1} {#2} }
+\NewDocumentCommand { \OpenMc } { mO{} } { \acc_open_mc:nn {#1} {#2} }
+\NewDocumentCommand { \OpenStructMc } { mO{}O{} } { \acc_open_smc:nnn {#1} {#2} {#3} }
 
-\NewDocumentCommand { \OpenMc } { mo } {
-    \IfNoValueTF {#2} {
-        \acc_open_mc:n {#1}
-    } {
-        \acc_open_mc:nn {#1} {#2}
-    }
-}
+\NewDocumentCommand { \CloseStruct } { } { \acc_close_struct: }
+\NewDocumentCommand { \CloseMc } { } { \acc_close_mc: }
+\NewDocumentCommand { \CloseStructMc } { } { \acc_close_smc: }
 
-\NewDocumentCommand { \OpenStructMc } { moo } {
-    \IfNoValueTF {#2} {
-        \acc_open_struct:n {#1}
-        \acc_open_mc:n {#1}
-    } {
-        \acc_open_struct:nn {#1} {#2}
-        \IfNoValueTF {#3} {
-            \acc_open_mc:n {#1}
-        } {
-            \acc_open_mc:nn {#1} {#3}
-        }
-    }
-}
+\NewDocumentCommand { \OpenFigureTag } { mO{} } { \acc_open_figure_smc:nn {#1} {#2} }
+\NewDocumentCommand { \OpenFigureStash } { mO{}m } { \acc_open_figure_smc:nn {#1} { stash, label = {#3}, #2 } }
 
-\NewDocumentCommand { \CloseStructMc } {} { \acc_close_smc: }
+\cs_generate_variant:Nn \uftag_struct_use:n { o }
+\cs_generate_variant:Nn \uftag_struct_begin:n { o }
+\cs_generate_variant:Nn \cs_set:Nn { Nx, No }
 
-\NewDocumentCommand { \OpenFigureTag } { mo } {
-    \IfNoValueTF {#2} {
-        \acc_open_figure_smc:n {#1}
-    } {
-        \acc_open_figure_smc:nn {#1} {#2}
-    }
-}
-
-\NewDocumentCommand { \OpenFigureStash } { mom } {
-    \IfNoValueTF {#2} {
-        \acc_open_figure_smc:nn {#1} {stash, label=#3}
-    } {
-        \acc_open_figure_smc:nn {#1} {stash, label=#3,#2}
-    }
-}
-
-
-
-
-\cs_generate_variant:Nn \uftag_struct_use:n {o}
-
-\NewDocumentEnvironment{accfigure}{mo}{%
-
-\stepcounter{acc@figurenumber}
-\edef\figlabel{fig-\theacc@figurenumber}
-
-\IfValueTF{#2}{
-    \begin{figure}[#2]
+\NewDocumentEnvironment { accfigure } { mo } {
+	\stepcounter { acc@figurenumber }
+	\cs_set:Nn \__acc_figlabel: { fig - \theacc@figurenumber }
+	\IfValueTF {#2} {
+		\begin{figure}[#2]
+	}{
+		\begin{figure}
+	}
+		\cs_set:Nx \__acc_struct_figlabel: { tag = Figure, stash, label = \__acc_figlabel:, alttext = {#1}, actualtext = {~} }
+		\uftag_struct_begin:o \__acc_struct_figlabel:
+		\acc_open_mc:n {Figure}
+		\cs_set_eq:NN \__acc_oldcaption:n \caption
+		\cs_set:Npn \caption ##1 {
+			\acc_close_smc:
+			\acc_open_smc:n {Caption}
+			\__acc_oldcaption:n {##1}
+		}
 }{
-    \begin{figure}
+		\acc_close_smc:
+		\uftag_struct_use:o \__acc_figlabel:
+    \end{figure}
 }
 
+\AtBeginDocument { \acc_open_struct:n {Document} }
+\AtEndDocument { \acc_close_all_open_sections: \acc_close_struct: }
 
-
-%\OpenFigureStash{#1}{figurestash}
-
-\edef\structfiglabel{tag=Figure, stash, label=\figlabel, alttext={#1}, actualtext={~}}
-\ex\def\ex\showstructbegin\ex{\ex\tagstructbegin\ex{\structfiglabel}}
-
-%\show\showstructbegin
-
-%\show\structfiglabel
-
-%\tagstructbegin{tag=Figure, stash, label=\figlabel, alttext={#1}, actualtext={~}}
-%\ex\tagstructbegin\ex{\structfiglabel}
-
-\showstructbegin
-
-\tagmcbegin{tag=Figure}
-
-
-\cs_set_eq:NN \oldcaption \caption
-\cs_set:Nn \__caption:n {
-    \CloseStructMc
-    \OpenStructMc{Caption}
-    \oldcaption{##1}
-}
-\cs_set_eq:NN \caption \__caption:n
-
-}{
-    \CloseStructMc
-    \uftag_struct_use:o \figlabel
-%\CloseStructMc
-\end{figure}%
+\renewcommand \tableofcontents {
+	\__acc_open_section:n { 1 }
+	\acc_open_smc:n {H1}
+	\textbf { \Large\contentsname } \par
+	\acc_close_smc:
+	\acc_open_struct:n {TOC}
+	\@mkboth { \MakeUppercase \contentsname } { \MakeUppercase \contentsname }
+	\@starttoc {toc}
+	\acc_close_struct:
 }
 
-
-\AtBeginDocument{\tagstructbegin{tag=Document}}
-\AtEndDocument{\__acc_doc_end_section:\tagstructend}
-
-\renewcommand\tableofcontents{
-    \__acc_open_section:n { 1 }
-    \OpenStructMc{H1}
-    \textbf{\Large\contentsname}\par
-    \CloseStructMc
-    \OpenStruct{TOC}
-    \@mkboth{\MakeUppercase\contentsname}{\MakeUppercase\contentsname}
-    \@starttoc{toc}
-    \CloseStruct
+\renewcommand \addcontentsline [3] {
+	\addtocontents {#1} {
+		\OpenStruct {TOCI}
+		\protect\contentsline {#2} {#3} { \__old_thepage: }
+		\CloseStructMc
+		\CloseStruct
+	}
 }
 
-\cs_set_eq:NN \oldaddcontentsline \addcontentsline
-\renewcommand\addcontentsline[3]{
-    \addtocontents {#1}{
-        \OpenStruct{TOCI}
-        \protect\contentsline {#2}{#3}{\__old_thepage: }
-        \CloseStructMc
-        \CloseStruct
-    }
-}
-
-\cs_new:Nn \__acc_artifact_args: {
-    Layout /ActualText ()
-}
 
 %#4 = subsection number and name
 %#5 = page number
 \def\@dottedtocline#1#2#3#4#5{
-    \ifnum #1>\c@tocdepth \else
-        \vskip \z@ \@plus .2\p@
-        {
-            \leftskip #2\relax \rightskip \@tocrmarg \parfillskip -\rightskip
-            \parindent #2\relax \@afterindenttrue \interlinepenalty \@M \leavevmode
-            \@tempdima #3\relax \advance \leftskip \@tempdima \null \nobreak
-            \hskip -\leftskip {#4}\nobreak
-            \leaders \hbox {
-                $\m@th \mkern \@dotsep mu\hbox {\__fake_dot:}\mkern \@dotsep mu$
-            } \hfill
-            \nobreak
-            \hb@xt@ \@pnumwidth {\hfil \normalfont \normalcolor #5}\par
-        }
-    \fi
+	\ifnum #1>\c@tocdepth \else
+		\vskip \z@ \@plus .2\p@
+		{
+			\leftskip #2\relax \rightskip \@tocrmarg \parfillskip -\rightskip
+			\parindent #2\relax \@afterindenttrue \interlinepenalty \@M \leavevmode
+			\@tempdima #3\relax \advance \leftskip \@tempdima \null \nobreak
+			\hskip -\leftskip {#4} \nobreak
+			\leaders \hbox {
+				$\m@th \mkern \@dotsep mu\hbox {\__fake_dot:}\mkern \@dotsep mu$
+			} \hfill
+			\nobreak
+			\hb@xt@ \@pnumwidth {\hfil \normalfont \normalcolor #5}\par
+		}
+	\fi
 }
 
-\cs_new:Nn \__acc_try_close_section:n {
-    \cs_if_exists_use:c { __acc_close_section_level_ #1 : }
-}
+\cs_new:Nn \__acc_try_close_section:n { \cs_if_exists_use:c { __acc_close_section_level_ #1 : } }
 
 \cs_generate_variant:Nn \__acc_try_close_section:n { V }
 
-%\int_new:N \l_close_sec_depth_int
-
 \cs_new:Nn \__acc_close_open_sections_recursive:n {
-    \cs_if_exist_use:cTF { __acc_close_section_level_ #1 : } {
-        \cs_undefine:c { __acc_close_section_level_ #1 : }
-        \__acc_close_open_sections_recursive:x { \int_eval:n { 1 + #1 } }
-    } { }
+	\cs_if_exist_use:cTF { __acc_close_section_level_ #1 : } {
+		\cs_undefine:c { __acc_close_section_level_ #1 : }
+		\__acc_close_open_sections_recursive:x { \int_eval:n { 1 + #1 } }
+	} { }
 }
 
 \cs_generate_variant:Nn \__acc_close_open_sections_recursive:n { x }
 
 \cs_new:Nn \__acc_open_section:n {
-    \__acc_close_open_sections_recursive:n {#1}
-    \cs_new:cn { __acc_close_section_level_ #1 : } { \uftag_struct_end: }
-    \uftag_struct_begin:n { tag = Sect }
+	\__acc_close_open_sections_recursive:n {#1}
+	\cs_new:cn { __acc_close_section_level_ #1 : } { \acc_close_struct: }
+	\acc_open_struct:n {Sect}
 }
 
-\cs_set_eq:NN \__acc_old_section:D \section
-
-%\cs_set:Npn \section {\cs_if_exist_use:N \EndSection\BeginSection\__acc_old_section:D}
-
-%\cs_set_eq:NN \EndSection \relax
-\cs_new:Nn \__acc_real_end_section: {\tagstructend}
-\NewDocumentCommand {\BeginSection} {} {
-    \cs_gset_eq:NN \EndSection \__acc_real_end_section:
-    \uftag_struct_begin:n { tag = Sect }
-}
-
-\cs_set:Nn \__acc_doc_end_section: {
-    \__acc_close_open_sections_recursive:n { 1 }
-%    \cs_if_exist_use:N \EndSection
-}
+\cs_set:Nn \acc_close_all_open_sections: { \__acc_close_open_sections_recursive:n { 1 } }
 
 
 
 \def\@startsection#1#2#3#4#5#6{
-    \__acc_open_section:n {#2}
-    \if@noskipsec
-        \leavevmode
-    \fi
-    \par \@tempskipa #4\relax \@afterindenttrue
-    \ifdim \@tempskipa <\z@
-        \@tempskipa -\@tempskipa \@afterindentfalse
-    \fi
-    \if@nobreak
-        \everypar {}
-    \else
-        \addpenalty \@secpenalty \addvspace \@tempskipa
-    \fi
-    \@ifstar {
-        \uftag_struct_begin:n {tag=H#2}
-        \nobreak
-        \uftag_mc_begin:n {tag=H#2}
-        \nobreak
-        \@ssect {#3}{#4}{#5}{#6}
-    }{
-        \@dblarg {\@sect {#1}{#2}{#3}{#4}{#5}{#6}}
-    }
+	\__acc_open_section:n {#2}
+	\if@noskipsec
+		\leavevmode
+	\fi
+	\par \@tempskipa #4\relax \@afterindenttrue
+	\ifdim \@tempskipa <\z@
+		\@tempskipa -\@tempskipa \@afterindentfalse
+	\fi
+	\if@nobreak
+		\everypar {}
+	\else
+		\addpenalty \@secpenalty \addvspace \@tempskipa
+	\fi
+	\acc_open_smc:n { H #2 }
+	\@ifstar {
+		\@ssect {#3}{#4}{#5}{#6}
+	}{
+		\@dblarg { \@sect {#1}{#2}{#3}{#4}{#5}{#6} }
+	}
 }
 
 \def\@ssect#1#2#3#4#5{
-    \@tempskipa #3\relax
-    \ifdim \@tempskipa >\z@
-        \begingroup
-            #4{\@hangfrom {\hskip #1}\interlinepenalty \@M
-            #5
-            \nobreak
-            \uftag_mc_end:
-            \uftag_struct_end:
-            \@@par }
-        \endgroup
-    \else
-        \def \@svsechd {
-            #4{\hskip #1\relax
-            #5
-            \nobreak
-            \uftag_mc_end:
-            \uftag_struct_end:
-        }}
-    \fi
-    \@xsect {#3}
+	\@tempskipa #3\relax
+	\ifdim \@tempskipa >\z@
+		\begingroup
+			#4 {
+				\@hangfrom { \hskip #1 }\interlinepenalty \@M
+				#5
+				\nobreak
+				\acc_close_smc:
+				\@@par
+			}
+		\endgroup
+	\else
+		\def \@svsechd {
+			#4 {
+				\hskip #1\relax
+				#5
+				\nobreak
+				\acc_close_smc:
+			}
+		}
+	\fi
+	\@xsect {#3}
 }
 
 \def\@sect #1#2#3#4#5#6[#7]#8 {
-                \OpenStructMc{H#2}
-    \ifnum #2>\c@secnumdepth
-        \let \@svsec \@empty
-    \else
-        \refstepcounter {#1}\protected@edef \@svsec {\@seccntformat {#1}\relax }
-    \fi
-    \@tempskipa #5\relax
-    \ifdim \@tempskipa >\z@
-        \begingroup
-            #6{
-                \@hangfrom {\hskip #3\relax \@svsec }\interlinepenalty \@M
-                #8
-%                #1-#2-#3-#4-#5-#6-#7-#8
-                \CloseStructMc
-                \@@par
-            }%
-        \endgroup
-        \csname #1mark\endcsname {#7}
-        \addcontentsline {toc}{#1}{
-            \ifnum #2>\c@secnumdepth \else
-                \OpenStructMc{Lbl}
-                \protect \numberline{\csname the#1\endcsname }
-                \CloseStructMc
-            \fi
-            \OpenStructMc{Reference}
-            #7
-%            \CloseStructMc
-        }
-    \else
-        \def \@svsechd {
-            #6{
-                \hskip #3\relax \@svsec
-                \@hangfrom {\hskip #3\relax \@svsec }\interlinepenalty \@M
-                \OpenStructMc{H#2}
-                #8
-                \CloseStructMc
-                \@@par
-            }
-            \csname #1mark\endcsname {#7}
-            \addcontentsline {toc}{#1}{
-                \ifnum #2>\c@secnumdepth \else
-                    \OpenStructMc{Lbl}
-                    \protect \numberline{\csname the#1\endcsname }
-                    \CloseStructMc
-                \fi
-                \OpenStructMc{Reference}
-                #7
-%                \CloseStructMc
-            }
-        }
-    \fi
-    \@xsect {#5}
+	\ifnum #2>\c@secnumdepth
+		\let \@svsec \@empty
+	\else
+		\refstepcounter {#1} \protected@edef \@svsec { \@seccntformat {#1} \relax  }
+	\fi
+	\@tempskipa #5 \relax
+	\ifdim \@tempskipa > \z@
+		\begingroup
+			#6{
+				\@hangfrom { \hskip #3 \relax \@svsec } \interlinepenalty \@M
+				#8
+				\acc_close_smc:
+				\@@par
+			}%
+		\endgroup
+		\csname #1mark\endcsname {#7}
+		\addcontentsline {toc} {#1} {
+			\ifnum #2>\c@secnumdepth \else
+				\OpenStructMc { Lbl }
+				\protect \numberline { \csname the#1\endcsname }
+				\CloseStructMc
+			\fi
+			\OpenStructMc { Reference }
+			#7
+		}
+	\else
+		\def \@svsechd {
+			#6{
+				\hskip #3\relax \@svsec
+				\@hangfrom {\hskip #3\relax \@svsec } \interlinepenalty \@M
+				#8
+				\acc_close_smc:
+				\@@par
+			}
+			\csname #1mark\endcsname {#7}
+			\addcontentsline {toc} {#1} {
+				\ifnum #2>\c@secnumdepth \else
+					\OpenStructMc { Lbl }
+					\protect \numberline { \csname the#1\endcsname }
+					\CloseStructMc
+				\fi
+				\OpenStructMc { Reference }
+				#7
+			}
+		}
+	\fi
+	\@xsect {#5}
 }
 
 \endinput
